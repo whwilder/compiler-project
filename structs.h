@@ -19,10 +19,10 @@ typedef struct symTable{
    Type *funcParms;
 } symTabNode;
 
-typedef struct symStack{
-   symTabNode *stack;
-   struct symStack *next;
-} symStack;
+typedef struct symTabStack{
+   symTabNode *table;
+   struct symTabStack *next;
+} symTabStack;
 
 typedef struct ParmList{
    Type type;
@@ -32,7 +32,6 @@ typedef struct ParmList{
    char *id;
    struct ParmList *next;
 } parmNode;
-Type checkFunc(char *id, parmNode *expr, int isStatement);
 
 typedef struct ExprStack{
    parmNode *exprs;

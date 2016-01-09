@@ -14,13 +14,15 @@ int errcode;
 
 
 int main (int argc, char **argv){
-   table = malloc(sizeof(symTabNode));
-   table->type=0;
-   table->defined=0;
-   table->scope=0;
-   table->symType=0;
-   table->id="$";
-   table->next=NULL;
+   //table = malloc(sizeof(symTabNode));
+   //table->type=0;
+   //table->defined=0;
+   //table->scope=0;
+   //table->symType=0;
+   //table->id = malloc(sizeof(char)*2);
+   //table->id[0] = '$';
+   //table->id[1] = '\0';
+   //table->next=NULL;
    
    parms = malloc(sizeof(parmNode));
    parms->type = -1;
@@ -35,6 +37,18 @@ int main (int argc, char **argv){
    stacks = malloc(sizeof(exprStack));
    stacks->next = NULL;
    stacks->exprs = NULL;
+
+   tables = malloc(sizeof(symTabStack));
+   tables->next = NULL;
+   tables->table = malloc(sizeof(symTabNode));
+   tables->table->type=0;
+   tables->table->defined=0;
+   tables->table->scope=0;
+   tables->table->symType=0;
+   tables->table->id=malloc(sizeof(char)*2);
+   tables->table->id[0]='$';
+   tables->table->id[1]='\0';
+   tables->table->next=NULL;
 
    root = malloc(sizeof(globNode));
 
@@ -51,7 +65,7 @@ int main (int argc, char **argv){
    
    strNum = 0;
    labNum = 0;
-   strings = malloc(sizeof(strTable));
+   strings = NULL;
 
 printf("#####################################################\n");
 printf("_print_int:\n");
@@ -493,7 +507,7 @@ char *addStr(char *str){
 
 char *findStr(char *str){
    strTable *tmp = strings;
-   while (tmp->next != NULL){
+   while (tmp != NULL){
       if(strcmp(str, tmp->str) == 0)
          return tmp->id;
       tmp = tmp->next;

@@ -55,6 +55,7 @@ globNode *newFuncProtoNode(char *id){
    // TODO: keep an eye on this if something breaks
    memcpy(func->formParms, tmp->funcParms, tmp->numParms*4);
    func->numParms = tmp->numParms;
+   func->stmt = NULL;
 
    globNode *glob = malloc(sizeof(globNode));
    glob->func = func;
@@ -157,7 +158,7 @@ globNode *newFuncNode(char *id, globNode *parms, globNode *varlist, stmtNode *st
 
 globNode *newDclNode(symTabNode *node, globNode *next){
    dclNode *dcl = malloc(sizeof(dclNode));
-   dcl->id = node->id;
+   dcl->id = strdup(node->id);
    dcl->type = node->type;
    dcl->arraySize = node->arraySize;
    tmpNum += 1 + (1*dcl->arraySize);

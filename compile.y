@@ -41,7 +41,7 @@ void yyerror(char *s);
 
 %type <type> type
 %type <node> var_decl parm_decl loc_decl 
-%type <glob> prog dcl decllist func loc_decllist varlist parm_types
+%type <glob> prog dcl decllist func loc_decllist varlist parm_types parmlist
 %type <stmt> stmt stmtlist assg
 %type <expr> expr exprlist
 /* associativity */
@@ -67,32 +67,31 @@ prog  : dcl {tmpNum = 1; currOffset = 8;} prog  {$$ = addDclNode($1,$3);}
 
 dcl      :  type decllist ';'    {$$ = $2;}
          |  error decllist ';'   {$$ = NULL;}
-         |  EXTERN type ID '(' parm_types ')' clearlocals 
-            {addToTable($2, 0, $3, FUNCPROTO, 0, 0); setExtern($3);}
+         |  EXTERN type ID addStack '(' parmlist ')' clearlocals 
+            {addToTable($2, 0, $3, FUNCPROTO, 0, 0, $6); setExtern($3);}
             idlist ';'
                {$$ = newFuncProtoNode($3);}
-         |  type ID '(' parm_types ')' clearlocals
-            {addToTable($1, 0, $2, FUNCPROTO, 0, 0);}
+         |  type ID addStack '(' parmlist ')' clearlocals
+            {addToTable($1, 0, $2, FUNCPROTO, 0, 0, $5);}
                 idlist ';'
             {$$ = newFuncProtoNode($2);}
-         |  error ID '(' parm_types ')' idlist ';' {$$ = NULL;}
-         |  EXTERN VOID ID '(' parm_types ')' clearlocals
-            {addToTable(VD, 0, $3, FUNCPROTO, 0, 0); setExtern($3);}
+         |  error ID '(' parmlist ')' idlist ';' {$$ = NULL;}
+         |  EXTERN VOID ID addStack '(' parmlist ')' clearlocals
+            {addToTable(VD, 0, $3, FUNCPROTO, 0, 0, $6); setExtern($3);}
             idlist ';'
               {$$ = newFuncProtoNode($3);}
-         |  VOID ID '(' parm_types ')' clearlocals
-            {addToTable(VD, 0, $2, FUNCPROTO, 0, 0);}
+         |  VOID ID addStack '(' parmlist ')' clearlocals
+            {addToTable(VD, 0, $2, FUNCPROTO, 0, 0, $5);}
             idlist ';'
                {$$ = newFuncProtoNode($2);}
-            
          ;
-idlist   : idlist clearlocals ',' ID '(' parm_types ')'  clearlocals
-            {addToTable(currType, 0, $4, FUNCPROTO, 0, 0);}
-         | idlist clearlocals ',' ID '(' parm_types error
+idlist   : idlist ',' ID addStack '(' parmlist ')'  clearlocals
+            {addToTable(currType, 0, $3, FUNCPROTO, 0, 0, $6);}
+         | idlist ',' ID addStack '(' parmlist error
          | /* epsilon */
          ;
-var_decl : ID                  {$$ = addToTable(currType, 0, $1, VAR, scope, 0);}
-         | ID '[' INTCON ']'   {$$ = addToTable(currType, 1, $1, VAR, scope, $3);}
+var_decl : ID                  {$$ = addToTable(currType, 0, $1, VAR, scope, 0, NULL);}
+         | ID '[' INTCON ']'   {$$ = addToTable(currType, 1, $1, VAR, scope, $3,NULL);}
          | ID '[' INTCON error {yyclearin; $$ = NULL;}
          | ID error INTCON ']' {yyclearin; $$ = NULL;}
          ;
@@ -103,28 +102,32 @@ decllist : var_decl ',' decllist {$$ = newDclNode($1, $3);}
 type     :  CHAR     {$$ = CHARACTER; currType = $$;}
          |  INT      {$$ = INTEGER;   currType = $$;}
          ;
-parm_decl   : type ID '[' ']' {$$ = addToTable($1, 1, $2, VAR, 1, 0);}
-            | type ID         {$$ = addToTable($1, 0, $2, VAR, 1, 0);}
+parm_decl   : type ID '[' ']' {$$ = addToTable($1, 1, $2, VAR, 1, 0,NULL);}
+            | type ID         {$$ = addToTable($1, 0, $2, VAR, 1, 0,NULL);}
             ;
-parm_types  : VOID         {$$ = NULL;}
-            | parm_decl    {$$ = newDclNode($1,NULL);}
-            | parm_decl ',' parm_types {$$ = newDclNode($1,$3);}
-            ;
-func  :  type ID '(' parm_types ')' 
-         {checkExtern($2); addToTable($1, 0, $2, FUNC, 0, 0); currOffset = -4;}
+parm_types: parm_decl    {$$ = newDclNode($1,NULL);}
+          | parm_decl ',' parm_types {$$ = newDclNode($1,$3);}
+          ;
+parmlist: parm_types {$$ = $1;}
+        | VOID       {$$ = NULL;}
+        ;
+func  :  type ID addStack '(' parmlist ')' 
+         {checkExtern($2); addToTable($1, 0, $2, FUNC, 0, 0, $5); currOffset = -4;}
          '{' incscope varlist stmtlist '}'
          {
-          $$ = newFuncNode($2, $4, $9, $10);
+          $$ = newFuncNode($2, $5, $10, $11); checkHasReturn($2);
           clearLocals(); scope = 0; tmpNum = 1; currOffset = 8;}
-      |  VOID ID '(' parm_types ')'
-         {checkExtern($2); addToTable(VD, 0, $2, FUNC, 0, 0); currOffset = -4;}
+      |  VOID ID addStack '(' parmlist ')'
+         {checkExtern($2); addToTable(VD, 0, $2, FUNC, 0, 0, $5); currOffset = -4;}
          '{' incscope varlist stmtlist '}'
          {
-          $$ = newFuncNode($2, $4, $9, $10);
+          $$ = newFuncNode($2, $5, $10, $11); checkHasReturn($2);
             clearLocals(); scope = 0; tmpNum = 1; currOffset = 8;}
-      |  error ID error parm_types ')' '{' varlist error '}' {$$ = NULL;}
+      |  error ID error parmlist ')' '{' varlist error '}' {$$ = NULL;}
       ;
 
+addStack : /* epsilon */ {addStack();}
+         ;
 clearlocals: /* epsilon */ {clearLocals();}
            ;
 
@@ -134,8 +137,8 @@ incscope: /* epsilon */ {scope = 1;}
 varlist : type loc_decllist ';' varlist {$$ = addDclNode($2,$4);}
         | /* epsilon */ {$$ = NULL;}
         ;
-loc_decl : ID                  {$$ = addToTable(currType, 0, $1, VAR, scope, 0);}
-         | ID '[' INTCON ']'   {$$ = addToTable(currType, 1, $1, VAR, scope, $3);}
+loc_decl : ID                  {$$ = addToTable(currType, 0, $1, VAR, scope, 0,NULL);}
+         | ID '[' INTCON ']'   {$$ = addToTable(currType, 1, $1, VAR, scope, $3,NULL);}
          | ID '[' INTCON error {yyclearin; $$ = NULL;}
          | ID error INTCON ']' {yyclearin; $$ = NULL;}
          ;
@@ -162,12 +165,12 @@ stmt:  IF '(' expr ')' stmt               {$$=newIfNode(IFSTMT,$3,$5,NULL);}
       {$$=newForNode(FORSTMT,NULL,$4,NULL,$7);}
     |  FOR '('      ';'      ';'      ')' stmt 
       {$$=newForNode(FORSTMT,NULL,NULL,NULL,$6);}
-    |  RETURN ';'    {$$ = newReturnNode(NULL);}
-    |  RETURN expr ';'  {$$ = newReturnNode($2);}
+    |  RETURN ';'    {$$ = newReturnNode(NULL); checkReturn(VD);}
+    |  RETURN expr ';'  {$$ = newReturnNode($2); checkReturn($2->valType);}
     |  assg ';'      {$$ = $1;}
-    |  ID addStack '(' exprlist ')' ';'
-         {$$ = stmtFuncCall($1, $4); clearExprs();}
-    |  ID addStack '(' ')' ';'     {$$ = stmtFuncCall($1, NULL); clearExprs();}
+    |  ID '(' exprlist ')' ';'
+         {$$ = stmtFuncCall($1, $3); checkFunc($1, $3, 1);}
+    |  ID '(' ')' ';'     {$$ = stmtFuncCall($1, NULL); checkFunc($1, NULL, 1);}
     |  '{' stmtlist '}'    {$$ = $2;}
     |  ';'                 {$$ = newEmptyNode(EMPTYSTMT);}
     |  ID error ')' ';'      {$$ = NULL;}
@@ -176,11 +179,11 @@ stmt:  IF '(' expr ')' stmt               {$$=newIfNode(IFSTMT,$3,$5,NULL);}
 stmtlist : stmt stmtlist {$$ = addStmtNode($1, $2);}
          | /* epsilon */ {$$ = NULL;}
          ;
-assg  :  ID '[' expr ']'    '=' expr    {$$ = newAssgNode($1,$3,$6);}
+assg  :  ID '[' expr ']'    '=' expr    {$$ = newAssgNode($1,$3,$6); checkElemAssg($1,$3->valType,$6->valType);}
       |  ID error expr ']'  '=' expr  {$$ = NULL;}
       |  ID '[' expr error  '=' expr  {$$ = NULL;}
       |  error '[' expr ']' '=' expr  {$$ = NULL;}
-      |  ID '=' expr    {$$ = newAssgNode($1,NULL,$3);}
+      |  ID '=' expr    {$$ = newAssgNode($1,NULL,$3); checkAssg($1, $3->valType);}
       |  ID error expr  {$$ = NULL;}
       ;
 expr  :  '-' expr %prec UMINUS
@@ -227,27 +230,32 @@ expr  :  '-' expr %prec UMINUS
          {$$ = newOpNode(RELGT, REL, $1, $3);
           $$->valType = checkRelExpr($1,$3,$2);}
       |  expr error expr   {$$ = NULL;}
-      |  ID            {$$ = newExprIdNode($1, NULL);}
-      |  ID '[' expr ']'            {$$ = newExprIdNode($1, $3);}
+      |  ID            {$$ = newExprIdNode($1, NULL); checkIsVar($1);}
+      |  ID '[' expr ']'            {$$ = newExprIdNode($1, $3); checkIsVar($1);}
          /*{$$ = checkIdExist($1,$3);}*/
       |  ID '[' expr error   {$$ = NULL;}
-      |  ID addStack '(' ')'     {$$ = exprFuncCall($1, NULL);clearExprs();}
-      |  ID addStack '(' error   {$$ = NULL; clearExprs();}
-      |  ID addStack '(' exprlist ')'
-         {$$ = exprFuncCall($1, $4); clearExprs();}
+      |  ID '(' ')'     {$$ = exprFuncCall($1, NULL); checkFunc($1, NULL, 0);}
+      |  ID '(' error   {$$ = NULL;}
+      |  ID '(' exprlist ')'
+         {$$ = exprFuncCall($1, $3); checkFunc($1, $3, 0);}
       |  '(' expr ')'  {$$ = $2;}
       |  INTCON      {$$ = newIntNode($1,INTEGER);}
       |  CHARCON      {$$ = newCharNode($1, CHARACTER);}
       |  STRINGCON      {$$ = newStringNode($1, STRING);}
       ;
 
-addStack : /* epsilon */ {addStack();}
-         ;
 exprlist : expr ',' exprlist  {$$ = addExprNode($1,$3);}
          | expr               {$$ = addExprNode($1,NULL);}
          ;
 
 %%
+
+void checkIsVar(char *id){
+   symTabNode *tmp = findId(id);
+   if (tmp != NULL && tmp->symType != VAR){
+      semerror(27,id);
+   }
+}
 
 void checkExtern(char *id){
    symTabNode *tmp = findId(id);
@@ -265,7 +273,7 @@ void setExtern(char *id){
 }
 
 void checkHasReturn(char *id){
-   symTabNode *tmp = findId(id);
+   symTabNode *tmp = getTopFunc();
    if (tmp->type == VD && tmp->hasReturn != 0){
       semerror(20,id);
    }
@@ -291,25 +299,32 @@ void checkReturn(Type type){
 }
 
 symTabNode *getTopFunc(){
-   symTabNode *nextPtr = table;
-   while (nextPtr != NULL){
-      if (nextPtr->symType == FUNC && nextPtr->scope == 0)
-         return nextPtr;
-      nextPtr = nextPtr->next;
-   }
-   return nextPtr;
+   return tables->next->table;
+   //symTabStack *stackptr = tables;
+   //while (nextPtr != NULL){
+   //   if (nextPtr->symType == FUNC && nextPtr->scope == 0)
+   //      return nextPtr;
+   //   nextPtr = nextPtr->next;
+   //}
+   //return nextPtr;
 }
 
+/* add new stack to symbol table when scope increases */
 void addStack(){
-   exprStack *tmpStack = malloc(sizeof(exprStack));
-   tmpStack->next = stacks;
-   parmNode *tmpExprs = malloc(sizeof(parmNode));
-   tmpExprs->type = -1;
-   tmpExprs->next = NULL;
-   tmpExprs->parmIndex = -1;
-   tmpExprs->isArray = -1;
-   tmpStack->exprs = tmpExprs;
-   stacks = tmpStack;
+   symTabNode *stackBottom = malloc(sizeof(symTabNode));
+   stackBottom->type=0;
+   stackBottom->defined=0;
+   stackBottom->scope=0;
+   stackBottom->symType=0;
+   stackBottom->id = malloc(sizeof(char) * 2);
+   stackBottom->id[0] = '$';
+   stackBottom->id[1] = '\0';
+   stackBottom->next=NULL;
+
+   symTabStack *stack = malloc(sizeof(symTabStack));
+   stack->table = stackBottom;
+   stack->next = tables;
+   tables = stack;
 }
 
 void checkCond(Type type, char *stmt){
@@ -384,8 +399,9 @@ Type checkElemAssg(char *id, Type indexExpr, Type type){
    return type;
 }
 
-Type checkFunc(char *id, parmNode *expr, int isStatement){
+Type checkFunc(char *id, exprNode *expr, int isStatement){
    symTabNode *node = findId(id);
+   int numParms = countExprParms(expr);
    if (node == NULL){
       semerror(5,id);
       return ERR;
@@ -402,7 +418,7 @@ Type checkFunc(char *id, parmNode *expr, int isStatement){
       semerror(1,id);
       return node->type;
    }
-   if (expr != NULL && node->numParms != expr->parmIndex+1){
+   if (node->numParms != numParms){
       semerror(1,id);
       return node->type;
    }
@@ -410,37 +426,41 @@ Type checkFunc(char *id, parmNode *expr, int isStatement){
       semerror(24,id);
       return node->type;
    }
+   if (isStatement == 0 && node->type == VD){
+      semerror(26,id);
+      return node->type;
+   }
    if (expr == NULL && node->numParms == 0){
       return node->type;
    }
    Type *funcParms = node->funcParms;
-   parmNode *tmp = expr;
-   while (tmp->next != NULL){
-      int index = tmp->parmIndex;
-      if (funcParms[index] != tmp->type){
-         if(funcParms[index] == INTEGER && tmp->type != CHARACTER)
+   exprNode *tmp = expr;
+   int i = 0;
+   while (tmp != NULL){
+      if (funcParms[i] != tmp->valType){
+         if(funcParms[i] == INTEGER && tmp->valType != CHARACTER)
             semerror(1, id);
-         else if (funcParms[index] == CHARACTER && tmp->type != INTEGER)
+         else if (funcParms[i] == CHARACTER && tmp->valType != INTEGER)
+            semerror(1, id);
+         else if (funcParms[i] == STRING || funcParms[i] == INTARRAY)
             semerror(1, id);
       }
-      tmp = tmp->next;
+      tmp = tmp->nextExpr;
+      i++;
    }
    return node->type;
 }
 
-void clearExprs(){
-   parmNode *tmp = stacks->exprs;
-   parmNode *tmpsp = stacks->exprs;
-   while(tmp->next != NULL){
-      tmp = tmp->next;
-      free(tmpsp);
-      tmpsp = tmp;
+int countExprParms(exprNode *parms){
+   int numParms = 0;
+   exprNode *tmp = parms;
+   while (tmp != NULL){
+      numParms++;
+      tmp = tmp->nextExpr;
    }
-   free(tmp);
-   exprStack *tmpStack = stacks;
-   stacks = stacks->next;
-   free(tmpStack);
+   return numParms;
 }
+
 
 Type checkUnaLogExpr(exprNode *e1, char op){
    Type t1 = e1->valType;
@@ -536,28 +556,28 @@ symTabNode *checkIdExist(char *id, exprNode *expr){
    return tmp;
 }
 
-symTabNode *addToTable(Type type, int isArray, char *id, SymType symType, int scope, int size){
+symTabNode *addToTable(Type type, int isArray, char *id, SymType symType, int scope, int size, globNode *parms){
    symTabNode *tmp = findId(id);
    if (tmp != NULL){
       if (tmp->scope == scope && tmp->symType != FUNCPROTO ){
          semerror(3, tmp->id);
-         return table;
+         return tmp;
       }
       else if(tmp->symType == FUNC && symType == FUNC){
          semerror(4, tmp->id);
-         return table;
+         return tmp;
       }
       else if(tmp->symType == FUNCPROTO && symType == FUNCPROTO){
          semerror(4, tmp->id);
-         return table;
+         return tmp;
       }
       else if(tmp->symType == FUNCPROTO && symType == FUNC){
          if (tmp->type != type){
             semerror(22,id);
          }
-         int code = checkParms(tmp);
+         int code = checkParms(tmp, parms);
          if(code != 0)
-            return table;
+            return tmp;
       }
    }
    symTabNode *tmpNode;
@@ -581,54 +601,68 @@ symTabNode *addToTable(Type type, int isArray, char *id, SymType symType, int sc
    if(tmpNode->symType != FUNC && tmpNode->symType != FUNCPROTO)
       tmpNode->numParms = 0;
    if (symType == FUNC || symType == FUNCPROTO){
-      addParmsToFunc(tmpNode);
+      addParmsToFunc(tmpNode, parms);
    }
    if(symType == FUNC){
       pushFuncDown(tmpNode);
-      return table;
+      return tmpNode;
    }
-   tmpNode->next = table;
-   table = tmpNode;
+   tmpNode->next = tables->table;
+   tables->table = tmpNode;
    //if (scope == 0) {tmpNode->next = globalTable; globalTable = tmpNode;}
    //if (scope == 1) {tmpNode->next =  localTable; localTable  = tmpNode;}
    
-   return table;
+   return tmpNode;
 }
 
 void pushFuncDown(symTabNode *tmpNode){
-   symTabNode *nextPtr;
-   symTabNode *prevPtr;
-   prevPtr = table;
+   symTabStack *stackPtr = tables;
+   /*
+      does not allow for nested functions; it should be possible to just stick the node in the next table down without complications, but the rest of the code would have to be aware of this
+   */
+   while (stackPtr->next != NULL){
+      stackPtr = stackPtr->next;
+   }
+   tmpNode->next = stackPtr->table;
+   stackPtr->table = tmpNode;
 
-   if(table->scope == 0){
-      tmpNode->next = table;
-      table = tmpNode;
-      return;
-   }
-   
-   while (prevPtr->next != NULL && prevPtr->next->scope != 0){
-      prevPtr = prevPtr->next;
-   }
-   if(prevPtr->next != NULL){
-      nextPtr = prevPtr->next;
-      tmpNode->next = nextPtr;
-      prevPtr->next = tmpNode;
-   }
-   else{
-      tmpNode->next = prevPtr;
-      table = tmpNode;
-   }
+   //if(table->scope == 0){
+   //   tmpNode->next = table;
+   //   table = tmpNode;
+   //   return;
+   //}
+   //
+   //while (prevPtr->next != NULL && prevPtr->next->scope != 0){
+   //   prevPtr = prevPtr->next;
+   //}
+   //if(prevPtr->next != NULL){
+   //   nextPtr = prevPtr->next;
+   //   tmpNode->next = nextPtr;
+   //   prevPtr->next = tmpNode;
+   //}
+   //else{
+   //   tmpNode->next = prevPtr;
+   //   table = tmpNode;
+   //}
 }
 
-int checkParms(symTabNode *node){
-   if(node->numParms != (parms->parmIndex+1)){
+int checkParms(symTabNode *node, globNode *parms){
+   int numParms = 0;
+   globNode *tmpParm = parms;
+   while (tmpParm != NULL){
+      numParms++;
+      tmpParm = tmpParm->next;
+   }
+   if(node->numParms != numParms){
       semerror(1, node->id);
       return 1;
    }
-   parmNode *tmpParm = parms;
-   while (tmpParm->next != NULL){
-      int index = tmpParm->parmIndex;
-      if (tmpParm->type != node->funcParms[index]){
+   else if (node->numParms == 0 && numParms == 0)
+      return 0;
+   tmpParm = parms;
+   int i = 0;
+   while (tmpParm != NULL){
+      if (tmpParm->dcl->type != node->funcParms[i]){
          semerror(2, node->id);
          return 1;
       }
@@ -637,40 +671,65 @@ int checkParms(symTabNode *node){
    return 0;
 }
 
-symTabNode *addParmsToFunc(symTabNode *tmpNode){
-   int numParms = parms->parmIndex+1;
+symTabNode *addParmsToFunc(symTabNode *tmpNode, globNode *parms){
+   int i = 0;
+   int numParms = 0;
+   globNode *tmp = parms;
+   if (parms == NULL){
+      tmpNode->numParms = 0;
+      tmpNode->funcParms = malloc(sizeof(Type));
+      tmpNode->funcParms[0] = VD;
+      return tmpNode;
+   }
+   while (tmp != NULL){
+      numParms++;
+      tmp = tmp->next;
+   }
    tmpNode->funcParms = malloc(sizeof(Type) * numParms);
    tmpNode->numParms = numParms;
-   parmNode *tmp = parms;
-   while (tmp->next != NULL){
-      tmpNode->funcParms[tmp->parmIndex] = tmp->type;
+   tmp = parms;
+   while (tmp != NULL){
+      if (tmp->type == DCL){
+         tmpNode->funcParms[i] = tmp->dcl->type;
+      }
+      else if (tmp->type == GLOBFUNC || tmp->type == GLOBFUNCPROTO){
+         tmpNode->funcParms[i] = tmp->func->id->type;
+      }
       tmp = tmp->next;
-      free(parms);
-      parms = tmp;
+      i++;
    }
    return tmpNode;
 }
 
 /* local variables should always be at the top of the stack, so just pop nodes until we hit a global variable */
 void clearLocals(){
-   symTabNode *nextPtr = table;
-   while (nextPtr->scope == 1){
+   symTabNode *nextPtr = tables->table;
+   while (nextPtr != NULL){
       symTabNode *tmp = nextPtr;
       nextPtr = nextPtr->next;
+      tables->table = nextPtr;
+      free(tmp->id);
+      free(tmp->funcParms);
       free(tmp);
    }
-   table = nextPtr;
+   symTabStack *tmpStack = tables;
+   tables = tables->next;
+   free(tmpStack);
 }
 
 symTabNode *findId(char *id){
-   symTabNode *tmpPtr = table;
+   symTabStack *stackPtr = tables;
    //if (scope == 0) {tmpPtr = globalTable;}
    //else if (scope == 1) {tmpPtr = localTable;}
-   while (tmpPtr->next != NULL){
-      if(strcmp(tmpPtr->id,id) == 0){
-         return tmpPtr;
+   while (stackPtr != NULL){
+      symTabNode *tmpPtr = stackPtr->table;
+      while (tmpPtr->next != NULL){
+         if(strcmp(tmpPtr->id,id) == 0){
+            return tmpPtr;
+         }
+         tmpPtr = tmpPtr->next;
       }
-      tmpPtr = tmpPtr->next;
+      stackPtr = stackPtr->next;
    }
    return NULL;
 }
@@ -836,9 +895,15 @@ case 11:
       case 25:
       fprintf(stderr, "Line %d: Invalid assignment to symbol \"%s\": \"%s\" is an array.\n", yylineno, str, str);
       break;
+      case 26:
+      fprintf(stderr, "Line %d: Function call to \"%s\" is not a statement, but return type is void.\n", yylineno, str);
+      break;
+      case 27:
+      fprintf(stderr, "Line %d: Symbol \"%s\" is not a variable, but was used as one.\n", yylineno, str);
+      break;
 
       default:
-      fprintf(stderr, "Line %d: Something has gone horribly wrong!\n", yylineno);
+      fprintf(stderr, "Line %d: Unknown error code.\n", yylineno);
       break;
    }
    return code;

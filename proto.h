@@ -21,14 +21,14 @@ void setExtern(char *id);
 void checkExtern(char *id);
 
 parmNode *addParm(symTabNode *node);
-int checkParms(symTabNode *node);
-symTabNode *addParmsToFunc(symTabNode *tmpNode);
+int checkParms(symTabNode *node, globNode *parms);
+symTabNode *addParmsToFunc(symTabNode *tmpNode, globNode *parms);
 
 void addExpr(Type type);
 void clearExprs();
 
 void setIdValue(int val, char *id, SymType symType);
-symTabNode *addToTable(Type type, int isArray, char *id, SymType symType, int scope, int size);
+symTabNode *addToTable(Type type, int isArray, char *id, SymType symType, int scope, int size, globNode *parms);
 void clearLocals();
 int semerror(int code, char *ptr);
 int returnType;
@@ -37,6 +37,8 @@ Type checkLogExpr(exprNode *e1, exprNode *e2, char *op);
 Type checkRelExpr(exprNode *e1, exprNode *e2, char *op);
 Type checkUnaExpr(exprNode *e1, char op);
 Type checkUnaLogExpr(exprNode *e1, char op);
+Type checkFunc(char *id, exprNode *expr, int isStatement);
+void checkIsVar(char *id);
 
 Type checkAssg(char *id, Type type);
 Type checkElemAssg(char *id, Type indexExpr, Type type);
@@ -45,8 +47,8 @@ void checkReturn(Type type);
 symTabNode *getTopFunc();
 void checkHasReturn(char *id);
 
-symTabNode *table;
-symStack   *stacks;
+symTabNode  *table;
+symTabStack *tables;
 parmNode *parms;
 //parmNode *exprs;
 //symTabNode *localTable;
