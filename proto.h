@@ -10,7 +10,6 @@
 /********************
  * TYPE CHECKING
  ********************/
-exprStack *stacks;
 
 void addStack();
 
@@ -20,7 +19,6 @@ void pushFuncDown(symTabNode *tmpNode);
 void setExtern(char *id);
 void checkExtern(char *id);
 
-parmNode *addParm(symTabNode *node);
 int checkParms(symTabNode *node, globNode *parms);
 symTabNode *addParmsToFunc(symTabNode *tmpNode, globNode *parms);
 
@@ -49,9 +47,6 @@ void checkHasReturn(char *id);
 
 symTabNode  *table;
 symTabStack *tables;
-parmNode *parms;
-//parmNode *exprs;
-//symTabNode *localTable;
 
 /********************
  * SYNTAX TREE

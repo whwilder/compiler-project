@@ -24,21 +24,6 @@ typedef struct symTabStack{
    struct symTabStack *next;
 } symTabStack;
 
-typedef struct ParmList{
-   Type type;
-   int parmIndex;
-   int isArray;
-   int arraySize;
-   char *id;
-   struct ParmList *next;
-} parmNode;
-
-typedef struct ExprStack{
-   parmNode *exprs;
-   struct ExprStack *next;
-} exprStack;
-
-
 /*******************
  * SYNTAX TREE
  *******************/

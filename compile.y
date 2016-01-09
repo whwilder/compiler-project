@@ -526,14 +526,6 @@ Type checkBinExpr(exprNode *e1, exprNode *e2, char op){
    }
 }
 
-void addExpr(Type type){
-   parmNode *tmp = malloc(sizeof(parmNode));
-   tmp->type = type;
-   tmp->next = stacks->exprs;
-   tmp->parmIndex = tmp->next->parmIndex+1;
-   stacks->exprs = tmp;
-}
-
 symTabNode *checkIdExist(char *id, exprNode *expr){
    symTabNode *tmp = findId(id);
    if (tmp == NULL){
@@ -734,25 +726,6 @@ symTabNode *findId(char *id){
    return NULL;
 }
 
-parmNode *addParm(symTabNode *node){
-   parmNode *tmp  = malloc(sizeof(parmNode));
-   tmp->type      = node->type;
-   tmp->isArray   = node->isArray;
-   tmp->id        = strdup(node->id);
-   tmp->next      = parms;
-   tmp->parmIndex = parms->parmIndex+1;
-   parms          = tmp;
-   return parms;
-}
-
-void clearParms(){
-   parmNode *tmp = parms;
-   while (tmp->next != NULL){
-      tmp = tmp->next;
-      free(parms);
-      parms = tmp;
-   }
-}
 
 static void print_tok(){
    if (yytext[0] == 0){

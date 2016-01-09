@@ -14,30 +14,6 @@ int errcode;
 
 
 int main (int argc, char **argv){
-   //table = malloc(sizeof(symTabNode));
-   //table->type=0;
-   //table->defined=0;
-   //table->scope=0;
-   //table->symType=0;
-   //table->id = malloc(sizeof(char)*2);
-   //table->id[0] = '$';
-   //table->id[1] = '\0';
-   //table->next=NULL;
-   
-   parms = malloc(sizeof(parmNode));
-   parms->type = -1;
-   parms->parmIndex = -1;
-   parms->next = NULL;
-
-   //exprs = malloc(sizeof(parmNode));
-   //exprs->type = -1;
-   //exprs->parmIndex = -1;
-   //exprs->next = NULL;
-
-   stacks = malloc(sizeof(exprStack));
-   stacks->next = NULL;
-   stacks->exprs = NULL;
-
    tables = malloc(sizeof(symTabStack));
    tables->next = NULL;
    tables->table = malloc(sizeof(symTabNode));
