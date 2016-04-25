@@ -1,5 +1,5 @@
 CC = gcc
-CFLAGS = -Wall -O2 -g
+CFLAGS = -Wall -O2 -g -std=gnu99
 
 #CFILES = compile.tab.c compile.lex.c syntree.c main.c
 #
@@ -22,7 +22,7 @@ CFLAGS = -Wall -O2 -g
 compile : compile.l compile.y main.c
 	bison -dvt compile.y
 	flex -o compile.lex.c compile.l
-	cc -g -o compile compile.tab.c compile.lex.c syntree.c main.c 
+	${CC} ${CFLAGS} -o compile compile.tab.c compile.lex.c syntree.c main.c 
 
 .PHONY : clean
 clean:

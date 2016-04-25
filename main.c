@@ -222,6 +222,8 @@ void traverseStmt(stmtNode *stmts){
             break;
          case EMPTYSTMT:
             break;
+         default:
+            break;
       }
       tmp = tmp->next;
    }
@@ -305,6 +307,8 @@ void evalUnaExpr(exprNode *node, char *trueDest, char *falseDest){
       case UNANOT:
          traverseExprNode(node->unaNode->expr, falseDest, trueDest);
          break;
+      default:
+         break;
    }
 }
 
@@ -321,6 +325,8 @@ void evalLog(exprNode *node, char *trueDest, char *falseDest){
          traverseExprNode(node->opNode->left, trueDest, newDest);
          printf("%s:\n", newDest);
          traverseExprNode(node->opNode->right, trueDest, falseDest);
+         break;
+      default:
          break;
    }
 }
@@ -377,6 +383,8 @@ void evalRel(exprNode *node, char *trueDest, char *falseDest){
          printf("    bgt  $t0, $t1, %s\n", trueDest);
          newGoto(falseDest);
          break;
+      default:
+         break;
    }
 }
 
@@ -414,6 +422,8 @@ void evalBin(exprNode *node){
          printf("    lw  $t1, %d($fp)\n", op->right->offset);
          printf("    div  $t2, $t0, $t1\n");
          printf("    sw  $t2, %d($fp)\n", node->offset);
+         break;
+      default:
          break;
    }
 }
@@ -467,6 +477,8 @@ void getTerm(exprNode *node){
          }
          printf("    la  $t0, %s\n", id);
          break;
+      default:
+         break;
    }
 }
 
@@ -503,7 +515,7 @@ void storeId(idNode *id, exprNode *RHS){
    printf("# %s = %s\n", id->id, RHS->tmp);
    if (loc == NULL){
       symTabNode *glob = findId(id->id);
-      idNode *idNode = RHS->idNode;
+      //idNode *idNode = RHS->idNode;
       if (rhsType == CHARACTER){
          printf("    lb  $t0, %d($fp)\n", RHS->offset);
       }
@@ -578,6 +590,8 @@ void storeId(idNode *id, exprNode *RHS){
                printf("    lw  $t4, %d($fp)   # get value of RHS\n", RHS->offset);
                printf("    sb  $t4, 0($t3)  # store value of RHS in elem\n\n");
             }
+            break;
+         default:
             break;
       }
    }
@@ -665,6 +679,8 @@ void getId(exprNode *expr){
                printf("    sb  $t3, %d($fp)  # store elem\n", expr->offset);
             }
             break;
+         default:
+            break;
       }
    }
 }
@@ -741,6 +757,8 @@ void codeGen_dcl(dclNode *dcl){
       case STRING:
          printf(".space %d\n", 1*dcl->arraySize);
          printf(".align 2\n");
+         break;
+      default:
          break;
    }
 }

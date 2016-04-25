@@ -7,6 +7,9 @@
 
 #ifndef PROTO
 #define PROTO
+
+int yyparse();
+
 /********************
  * TYPE CHECKING
  ********************/
@@ -37,6 +40,7 @@ Type checkUnaExpr(exprNode *e1, char op);
 Type checkUnaLogExpr(exprNode *e1, char op);
 Type checkFunc(char *id, exprNode *expr, int isStatement);
 void checkIsVar(char *id);
+int countExprParms(exprNode *parms);
 
 Type checkAssg(char *id, Type type);
 Type checkElemAssg(char *id, Type indexExpr, Type type);
@@ -98,6 +102,7 @@ stmtNode *newReturnNode(exprNode *expr);
 stmtNode *newEmptyNode(stmtType type);
 stmtNode *newWhileNode(stmtType type, exprNode *cond, stmtNode *stmt);
 stmtNode *newForNode(stmtType type, stmtNode *init, exprNode *cond, stmtNode *inc, stmtNode *stmt);
+stmtNode *newIfNode(stmtType type, exprNode *cond, stmtNode *stmtThen, stmtNode *stmtElse);
 
 void evalOp(exprNode *node);
 void evalBin(exprNode *node);

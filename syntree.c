@@ -115,7 +115,7 @@ globNode *newFuncNode(char *id, globNode *parms, globNode *varlist, stmtNode *st
    funcNode *func = malloc(sizeof(funcNode));
    symTabNode *tmp = findId(id);
 
-   int idLen = strlen(tmp->id)+1;
+   //int idLen = strlen(tmp->id)+1;
 
    idNode *idnode = malloc(sizeof(idNode));
    idnode->id = strdup(tmp->id);
