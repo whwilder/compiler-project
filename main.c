@@ -612,7 +612,8 @@ void getId(exprNode *expr){
       else if (glob->type == CHARACTER){
          printf("    la  $t0, _%s\n", expr->idNode->id);
          printf("    lb  $t0, 0($t0)\n");
-         printf("    sb  $t0, %d($fp)\n", expr->offset);
+            /* Even though we're dealing with a character, we're going to store it as a 32-bit integer.  Due to the operational characteristics set out in the spec, all characters must be converted to type int in all expressions.  As getId is only called in the context of an expression, all characters within an expression will be treated this way.  This applies to local variables as well */
+         printf("    sw  $t0, %d($fp)\n", expr->offset);
       }
       else if (glob->type == INTARRAY && expr->idNode->expr != NULL){
          traverseExprNode(expr->idNode->expr, NULL, NULL);
@@ -646,7 +647,7 @@ void getId(exprNode *expr){
             break;
          case CHARACTER:
             printf("    lb  $t0, %d($fp)\n", loc->offset);
-            printf("    sb  $t0, %d($fp)\n\n", expr->offset);
+            printf("    sw  $t0, %d($fp)\n\n", expr->offset);
             break;
          case INTARRAY:
          traverseExprNode(expr->idNode->expr, NULL, NULL);

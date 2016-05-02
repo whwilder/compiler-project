@@ -1,5 +1,5 @@
 CC = gcc
-CFLAGS = -Wall -O2 -g -std=gnu99
+CFLAGS = -Wall -g -std=gnu99
 
 #CFILES = compile.tab.c compile.lex.c syntree.c main.c
 #
