@@ -32,6 +32,8 @@ stmtNode *addStmtNode(stmtNode *node, stmtNode *next){
 stmtNode *newReturnNode(exprNode *expr){
    returnNode *ret = malloc(sizeof(returnNode));
    ret->expr = expr;
+   // get the return type of the function we're currently in
+   ret->returnType = tables->next->table->type;
 
    stmtNode *stmt = malloc(sizeof(stmtNode));
    stmt->ret = ret;

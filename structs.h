@@ -50,6 +50,7 @@ typedef struct emptyNode{
 } emptyNode;
 
 typedef struct ReturnNode{
+   Type returnType;
    struct ExprNode *expr;
 } returnNode;
 typedef struct whileNode{

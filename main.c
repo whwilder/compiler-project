@@ -169,6 +169,9 @@ void traverseStmt(stmtNode *stmts){
             traverseExprNode(tmp->ret->expr, NULL, NULL);
             printf("    ### return\n");
             if (tmp->ret->expr != NULL){
+               if (tmp->ret->returnType == CHARACTER)
+               printf("    lb  $v0, %d($fp) # store return value\n", tmp->ret->expr->offset);
+               else
                printf("    lw  $v0, %d($fp) # store return value\n", tmp->ret->expr->offset);
             }
             printf("    la $sp, 0($fp)   # deallocate locals\n");
