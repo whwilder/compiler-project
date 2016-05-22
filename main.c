@@ -572,7 +572,10 @@ void storeId(idNode *id, exprNode *RHS){
          traverseExprNode(RHS, NULL, NULL);
          traverseExprNode(id->expr, NULL, NULL);
          /* if the offset is < 0, it must be a local array; else, it must be an array passed as a parameter */
+         if(loc->offset < 0)
             printf("    la  $t0, %d($fp)      # get addr of 1st elem\n", loc->offset);
+         else
+            printf("    lw  $t0, %d($fp)      # get addr of 1st elem\n", loc->offset);
          if (id->expr != NULL){
                printf("    lw  $t4, %d($fp)  # get value of index\n",
                                id->expr->offset);
@@ -586,7 +589,10 @@ void storeId(idNode *id, exprNode *RHS){
          traverseExprNode(RHS, NULL, NULL);
          traverseExprNode(id->expr, NULL, NULL);
          /* if the offset is < 0, it must be a local array; else, it must be an array passed as a parameter */
+         if(loc->offset < 0)
             printf("    la  $t0, %d($fp)      # get addr of 1st elem\n", loc->offset);
+         else
+            printf("    lw  $t0, %d($fp)      # get addr of 1st elem\n", loc->offset);
          if (id->expr != NULL){
                printf("    lw  $t4, %d($fp)  # get value of index\n",
                                id->expr->offset);
