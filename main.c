@@ -170,9 +170,9 @@ void traverseStmt(stmtNode *stmts){
             printf("    ### return\n");
             if (tmp->ret->expr != NULL){
                if (tmp->ret->returnType == CHARACTER)
-               printf("    lb  $v0, %d($fp) # store return value\n", tmp->ret->expr->offset);
+                  printf("    lb  $v0, %d($fp) # store return value\n", tmp->ret->expr->offset);
                else
-               printf("    lw  $v0, %d($fp) # store return value\n", tmp->ret->expr->offset);
+                  printf("    lw  $v0, %d($fp) # store return value\n", tmp->ret->expr->offset);
             }
             printf("    la $sp, 0($fp)   # deallocate locals\n");
             printf("    lw $ra, 0($sp)   # Restore RA\n");
@@ -248,7 +248,7 @@ char *newLabel(){
 }
 
 void traverseExprNode(exprNode *node, char *trueDest, char *falseDest){
-   if (node == NULL)
+   if (node == NULL || node->touched == 1)
       return;
    int numParms;
    exprNode *parm;
@@ -284,6 +284,7 @@ void traverseExprNode(exprNode *node, char *trueDest, char *falseDest){
                printf("    jal  _%s\n", node->funcCall->id);
                printf("    la $sp, %d($sp)   # Adjust stack from params\n\n", 4*numParms);
             }
+          /* If function is main, don't insert an underscore in front of the label.  The spim emulator needs to be able to see the "main" label in order to run the program */
             else{
                printf("# call %s, %d\n", node->funcCall->id, numParms);
                printf("    jal  %s\n", node->funcCall->id);
@@ -675,14 +676,14 @@ void getId(exprNode *expr){
             printf("    la  $t0, %d($fp)      # get addr of 1st elem\n", loc->offset);
          else
             printf("    lw  $t0, %d($fp)      # get addr of 1st elem\n", loc->offset);
-            if (expr->idNode->expr != NULL){
-               printf("    lw  $t4, %d($fp)  # get value of index\n",
-                               expr->idNode->expr->offset);
-               printf("    add $t3, $t0, $t4 # add index to addr of 1st elem\n");
-               printf("    lb  $t3, 0($t3)   # get value of elem\n");
-               printf("    sb  $t3, %d($fp)  # store elem\n", expr->offset);
-            }
-            break;
+         if (expr->idNode->expr != NULL){
+            printf("    lw  $t4, %d($fp)  # get value of index\n",
+                            expr->idNode->expr->offset);
+            printf("    add $t3, $t0, $t4 # add index to addr of 1st elem\n");
+            printf("    lb  $t3, 0($t3)   # get value of elem\n");
+            printf("    sb  $t3, %d($fp)  # store elem\n", expr->offset);
+         }
+         break;
          default:
             break;
       }
@@ -705,7 +706,6 @@ int traverseParms(exprNode *parm){
    if (parm == NULL)
       return 0;
    int numParms;
-   parm->touched = 1;
    /* recursively call this function */
    numParms = traverseParms(parm->nextExpr)+1;
    Type type;
@@ -741,6 +741,7 @@ int traverseParms(exprNode *parm){
    }
    printf("    la  $sp, %d($sp)  # Move stack down 4\n", -4);
    printf("    sw  $t0, 0($sp)   # Stick param onto stack\n\n");
+   parm->touched = 1;
    return numParms;
 }
 
